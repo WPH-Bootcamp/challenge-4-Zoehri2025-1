@@ -14,8 +14,15 @@
  */
 
 import readlineSync from 'readline-sync';
+import chalk from 'chalk';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Student from './src/Student.js';
 import StudentManager from './src/StudentManager.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Inisialisasi StudentManager
 const manager = new StudentManager();
@@ -24,18 +31,21 @@ const manager = new StudentManager();
  * Menampilkan menu utama
  */
 function displayMenu() {
-  console.log('\n=================================');
-  console.log('SISTEM MANAJEMEN NILAI SISWA');
-  console.log('=================================');
-  console.log('1. Tambah Siswa Baru');
-  console.log('2. Lihat Semua Siswa');
-  console.log('3. Cari Siswa');
-  console.log('4. Update Data Siswa');
-  console.log('5. Hapus Siswa');
-  console.log('6. Tambah Nilai Siswa');
-  console.log('7. Lihat Top 3 Siswa');
-  console.log('8. Keluar');
-  console.log('=================================');
+  console.log('\n' + chalk.cyan('================================='));
+  console.log(chalk.bold.cyan('SISTEM MANAJEMEN NILAI SISWA'));
+  console.log(chalk.cyan('================================='));
+  console.log(chalk.white('1. Tambah Siswa Baru'));
+  console.log(chalk.white('2. Lihat Semua Siswa'));
+  console.log(chalk.white('3. Cari Siswa'));
+  console.log(chalk.white('4. Update Data Siswa'));
+  console.log(chalk.white('5. Hapus Siswa'));
+  console.log(chalk.white('6. Tambah Nilai Siswa'));
+  console.log(chalk.white('7. Lihat Top 3 Siswa'));
+  console.log(chalk.yellow('8. Filter Siswa by Kelas'));
+  console.log(chalk.yellow('9. Statistik Kelas'));
+  console.log(chalk.yellow('10. Export Laporan ke File'));
+  console.log(chalk.red('11. Keluar'));
+  console.log(chalk.cyan('================================='));
 }
 
 /**
@@ -49,9 +59,9 @@ function displayMenu() {
 function askNonEmptyInput(promptText, validator) {
   let value = '';
   do {
-    value = readlineSync.question(promptText).trim();
+    value = readlineSync.question(chalk.blue(promptText)).trim();
     if (!value) {
-      console.log('Input tidak boleh kosong. Silakan coba lagi.');
+      console.log(chalk.red('Input tidak boleh kosong. Silakan coba lagi.'));
       continue;
     }
     if (validator && !validator(value)) {
@@ -62,29 +72,29 @@ function askNonEmptyInput(promptText, validator) {
 }
 
 function askYesNo(promptText) {
-  const answer = readlineSync.question(`${promptText} (y/n): `, {
+  const answer = readlineSync.question(chalk.blue(`${promptText} (y/n): `), {
     limit: /^(y|n)$/i,
-    limitMessage: 'Masukkan y atau n.',
+    limitMessage: chalk.red('Masukkan y atau n.'),
   });
   return answer.toLowerCase() === 'y';
 }
 
 function askScore(promptText) {
   while (true) {
-    const input = readlineSync.question(promptText).trim();
+    const input = readlineSync.question(chalk.blue(promptText)).trim();
     const score = Number(input);
     if (Number.isFinite(score) && score >= 0 && score <= 100) {
       return score;
     }
-    console.log('Nilai harus berupa angka antara 0 dan 100.');
+    console.log(chalk.red('Nilai harus berupa angka antara 0 dan 100.'));
   }
 }
 
 function addNewStudent() {
-  console.log('\n--- Tambah Siswa Baru ---');
+  console.log('\n' + chalk.bold.cyan('--- Tambah Siswa Baru ---'));
   const id = askNonEmptyInput('Masukkan ID siswa: ', (value) => {
     if (manager.findStudent(value)) {
-      console.log('ID sudah digunakan. Silakan gunakan ID lain.');
+      console.log(chalk.red('ID sudah digunakan. Silakan gunakan ID lain.'));
       return false;
     }
     return true;
@@ -95,15 +105,17 @@ function addNewStudent() {
   try {
     const student = new Student(id, name, studentClass);
     if (manager.addStudent(student)) {
-      console.log('Siswa berhasil ditambahkan.');
+      console.log(chalk.green('✓ Siswa berhasil ditambahkan.'));
       if (askYesNo('Apakah ingin langsung menambahkan nilai?')) {
         addGradesToStudent(student);
       }
     } else {
-      console.log('Gagal menambahkan siswa. ID mungkin sudah digunakan.');
+      console.log(
+        chalk.red('✗ Gagal menambahkan siswa. ID mungkin sudah digunakan.')
+      );
     }
   } catch (error) {
-    console.log(`Gagal membuat siswa: ${error.message}`);
+    console.log(chalk.red(`✗ Gagal membuat siswa: ${error.message}`));
   }
 }
 
@@ -114,7 +126,7 @@ function addNewStudent() {
  * - Jika tidak ada siswa, tampilkan pesan
  */
 function viewAllStudents() {
-  console.log('\n--- Daftar Semua Siswa ---');
+  console.log('\n' + chalk.bold.cyan('--- Daftar Semua Siswa ---'));
   manager.displayAllStudents();
 }
 
@@ -126,15 +138,15 @@ function viewAllStudents() {
  * - Tampilkan info siswa jika ditemukan
  */
 function searchStudent() {
-  console.log('\n--- Cari Siswa ---');
-  const id = readlineSync.question('Masukkan ID siswa: ').trim();
+  console.log('\n' + chalk.bold.cyan('--- Cari Siswa ---'));
+  const id = readlineSync.question(chalk.blue('Masukkan ID siswa: ')).trim();
   if (!id) {
-    console.log('ID tidak boleh kosong.');
+    console.log(chalk.red('ID tidak boleh kosong.'));
     return;
   }
   const student = manager.findStudent(id);
   if (!student) {
-    console.log(`Siswa dengan ID ${id} tidak ditemukan.`);
+    console.log(chalk.red(`✗ Siswa dengan ID ${id} tidak ditemukan.`));
     return;
   }
   student.displayInfo();
@@ -149,32 +161,36 @@ function searchStudent() {
  * - Update menggunakan manager
  */
 function updateStudent() {
-  console.log('\n--- Update Data Siswa ---');
+  console.log('\n' + chalk.bold.cyan('--- Update Data Siswa ---'));
   const id = readlineSync
-    .question('Masukkan ID siswa yang akan diupdate: ')
+    .question(chalk.blue('Masukkan ID siswa yang akan diupdate: '))
     .trim();
   if (!id) {
-    console.log('ID tidak boleh kosong.');
+    console.log(chalk.red('ID tidak boleh kosong.'));
     return;
   }
   const student = manager.findStudent(id);
   if (!student) {
-    console.log(`Siswa dengan ID ${id} tidak ditemukan.`);
+    console.log(chalk.red(`✗ Siswa dengan ID ${id} tidak ditemukan.`));
     return;
   }
 
-  console.log('\nData saat ini:');
+  console.log(chalk.yellow('\nData saat ini:'));
   student.displayInfo();
 
   const newName = readlineSync
-    .question('Masukkan nama baru (kosongkan jika tidak ingin mengubah): ')
+    .question(
+      chalk.blue('Masukkan nama baru (kosongkan jika tidak ingin mengubah): ')
+    )
     .trim();
   const newClass = readlineSync
-    .question('Masukkan kelas baru (kosongkan jika tidak ingin mengubah): ')
+    .question(
+      chalk.blue('Masukkan kelas baru (kosongkan jika tidak ingin mengubah): ')
+    )
     .trim();
 
   if (!newName && !newClass) {
-    console.log('Tidak ada perubahan yang dilakukan.');
+    console.log(chalk.yellow('Tidak ada perubahan yang dilakukan.'));
     return;
   }
 
@@ -185,11 +201,11 @@ function updateStudent() {
     });
     console.log(
       success
-        ? 'Data siswa berhasil diperbarui.'
-        : 'Gagal memperbarui data siswa.'
+        ? chalk.green('✓ Data siswa berhasil diperbarui.')
+        : chalk.red('✗ Gagal memperbarui data siswa.')
     );
   } catch (error) {
-    console.log(`Gagal memperbarui data siswa: ${error.message}`);
+    console.log(chalk.red(`✗ Gagal memperbarui data siswa: ${error.message}`));
   }
 }
 
@@ -201,28 +217,32 @@ function updateStudent() {
  * - Hapus menggunakan manager
  */
 function deleteStudent() {
-  console.log('\n--- Hapus Siswa ---');
+  console.log('\n' + chalk.bold.red('--- Hapus Siswa ---'));
   const id = readlineSync
-    .question('Masukkan ID siswa yang akan dihapus: ')
+    .question(chalk.blue('Masukkan ID siswa yang akan dihapus: '))
     .trim();
   if (!id) {
-    console.log('ID tidak boleh kosong.');
+    console.log(chalk.red('ID tidak boleh kosong.'));
     return;
   }
   const student = manager.findStudent(id);
   if (!student) {
-    console.log(`Siswa dengan ID ${id} tidak ditemukan.`);
+    console.log(chalk.red(`✗ Siswa dengan ID ${id} tidak ditemukan.`));
     return;
   }
   student.displayInfo();
 
   if (!askYesNo('Apakah Anda yakin ingin menghapus siswa ini?')) {
-    console.log('Penghapusan dibatalkan.');
+    console.log(chalk.yellow('Penghapusan dibatalkan.'));
     return;
   }
 
   const success = manager.removeStudent(id);
-  console.log(success ? 'Siswa berhasil dihapus.' : 'Gagal menghapus siswa.');
+  console.log(
+    success
+      ? chalk.green('✓ Siswa berhasil dihapus.')
+      : chalk.red('✗ Gagal menghapus siswa.')
+  );
 }
 
 /**
@@ -244,24 +264,24 @@ function addGradesToStudent(student) {
         name: student.name,
         class: student.class,
       });
-      console.log('Nilai berhasil ditambahkan/diperbarui.');
+      console.log(chalk.green('✓ Nilai berhasil ditambahkan/diperbarui.'));
     } catch (error) {
-      console.log(`Gagal menambahkan nilai: ${error.message}`);
+      console.log(chalk.red(`✗ Gagal menambahkan nilai: ${error.message}`));
     }
     adding = askYesNo('Apakah ingin menambahkan nilai lain?');
   }
 }
 
 function addGradeToStudent() {
-  console.log('\n--- Tambah Nilai Siswa ---');
-  const id = readlineSync.question('Masukkan ID siswa: ').trim();
+  console.log('\n' + chalk.bold.cyan('--- Tambah Nilai Siswa ---'));
+  const id = readlineSync.question(chalk.blue('Masukkan ID siswa: ')).trim();
   if (!id) {
-    console.log('ID tidak boleh kosong.');
+    console.log(chalk.red('ID tidak boleh kosong.'));
     return;
   }
   const student = manager.findStudent(id);
   if (!student) {
-    console.log(`Siswa dengan ID ${id} tidak ditemukan.`);
+    console.log(chalk.red(`✗ Siswa dengan ID ${id} tidak ditemukan.`));
     return;
   }
   student.displayInfo();
@@ -275,16 +295,202 @@ function addGradeToStudent() {
  * - Tampilkan informasi siswa
  */
 function viewTopStudents() {
-  console.log('\n--- Top 3 Siswa ---');
+  console.log('\n' + chalk.bold.cyan('--- Top 3 Siswa ---'));
   const topStudents = manager.getTopStudents(3);
   if (topStudents.length === 0) {
-    console.log('Belum ada data siswa.');
+    console.log(chalk.yellow('Belum ada data siswa.'));
     return;
   }
   topStudents.forEach((student, index) => {
-    console.log(`Peringkat ${index + 1}`);
+    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+    console.log(chalk.bold.yellow(`\n${medal} Peringkat ${index + 1}`));
     student.displayInfo();
   });
+}
+
+/**
+ * Handler untuk filter siswa berdasarkan kelas
+ */
+function filterStudentsByClass() {
+  console.log('\n' + chalk.bold.cyan('--- Filter Siswa by Kelas ---'));
+  const className = readlineSync
+    .question(chalk.blue('Masukkan nama kelas (misal: 10A): '))
+    .trim();
+  if (!className) {
+    console.log(chalk.red('Nama kelas tidak boleh kosong.'));
+    return;
+  }
+
+  const students = manager.getStudentsByClass(className);
+  if (students.length === 0) {
+    console.log(chalk.yellow(`Tidak ada siswa di kelas ${className}.`));
+    return;
+  }
+
+  console.log(
+    chalk.bold.green(
+      `\n=== Daftar Siswa Kelas ${className} (${students.length} siswa) ===`
+    )
+  );
+  students.forEach((student) => {
+    student.displayInfo();
+  });
+}
+
+/**
+ * Handler untuk melihat statistik kelas
+ */
+function viewClassStatistics() {
+  console.log('\n' + chalk.bold.cyan('--- Statistik Kelas ---'));
+  const className = readlineSync
+    .question(chalk.blue('Masukkan nama kelas (misal: 10A): '))
+    .trim();
+  if (!className) {
+    console.log(chalk.red('Nama kelas tidak boleh kosong.'));
+    return;
+  }
+
+  const stats = manager.getClassStatistics(className);
+  if (!stats) {
+    console.log(chalk.yellow(`Tidak ada data untuk kelas ${className}.`));
+    return;
+  }
+
+  console.log(chalk.bold.green(`\n=== Statistik Kelas ${stats.class} ===`));
+  console.log(chalk.white(`Jumlah Siswa: ${chalk.bold(stats.studentCount)}`));
+  console.log(
+    chalk.white(
+      `Rata-rata Kelas: ${chalk.bold.yellow(stats.averageScore.toFixed(2))}`
+    )
+  );
+  console.log(
+    chalk.white(
+      `Rata-rata Tertinggi: ${chalk.bold.green(
+        stats.highestAverage.toFixed(2)
+      )}`
+    )
+  );
+  console.log(
+    chalk.white(
+      `Rata-rata Terendah: ${chalk.bold.red(stats.lowestAverage.toFixed(2))}`
+    )
+  );
+  console.log(chalk.cyan('------------------------'));
+}
+
+/**
+ * Handler untuk export laporan ke file
+ */
+function exportReport() {
+  console.log('\n' + chalk.bold.cyan('--- Export Laporan ke File ---'));
+
+  const allStudents = manager.getAllStudents();
+  if (allStudents.length === 0) {
+    console.log(chalk.yellow('Belum ada data siswa untuk diekspor.'));
+    return;
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  const defaultFileName = `laporan-siswa-${timestamp}.txt`;
+  const fileName =
+    readlineSync
+      .question(
+        chalk.blue(`Masukkan nama file (Enter untuk ${defaultFileName}): `)
+      )
+      .trim() || defaultFileName;
+
+  const reportsDir = path.resolve(__dirname, 'reports');
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+
+  const filePath = path.resolve(reportsDir, fileName);
+
+  try {
+    let report = '='.repeat(50) + '\n';
+    report += 'LAPORAN DATA SISWA\n';
+    report += `Tanggal: ${new Date().toLocaleString('id-ID')}\n`;
+    report += `Total Siswa: ${allStudents.length}\n`;
+    report += '='.repeat(50) + '\n\n';
+
+    // Statistik umum
+    const averages = allStudents
+      .map((s) => s.getAverage())
+      .filter((avg) => avg > 0);
+    const totalAverage =
+      averages.length > 0
+        ? (
+            averages.reduce((sum, avg) => sum + avg, 0) / averages.length
+          ).toFixed(2)
+        : 0;
+    const passed = allStudents.filter((s) => s.getAverage() >= 75).length;
+    const failed = allStudents.length - passed;
+
+    report += 'STATISTIK UMUM\n';
+    report += '-'.repeat(50) + '\n';
+    report += `Rata-rata Keseluruhan: ${totalAverage}\n`;
+    report += `Jumlah Lulus: ${passed}\n`;
+    report += `Jumlah Tidak Lulus: ${failed}\n`;
+    report += '\n';
+
+    // Data per kelas
+    const classGroups = {};
+    allStudents.forEach((student) => {
+      if (!classGroups[student.class]) {
+        classGroups[student.class] = [];
+      }
+      classGroups[student.class].push(student);
+    });
+
+    Object.keys(classGroups)
+      .sort()
+      .forEach((className) => {
+        const classStats = manager.getClassStatistics(className);
+        if (classStats) {
+          report += `\nKELAS ${className}\n`;
+          report += '-'.repeat(50) + '\n';
+          report += `Jumlah Siswa: ${classStats.studentCount}\n`;
+          report += `Rata-rata Kelas: ${classStats.averageScore}\n`;
+          report += `Rata-rata Tertinggi: ${classStats.highestAverage.toFixed(
+            2
+          )}\n`;
+          report += `Rata-rata Terendah: ${classStats.lowestAverage.toFixed(
+            2
+          )}\n`;
+          report += '\n';
+        }
+      });
+
+    // Detail semua siswa
+    report += '\n' + '='.repeat(50) + '\n';
+    report += 'DETAIL SISWA\n';
+    report += '='.repeat(50) + '\n\n';
+
+    allStudents.forEach((student, index) => {
+      report += `[${index + 1}] ID: ${student.id}\n`;
+      report += `    Nama: ${student.name}\n`;
+      report += `    Kelas: ${student.class}\n`;
+      report += `    Mata Pelajaran:\n`;
+
+      const grades = student.grades;
+      if (Object.keys(grades).length === 0) {
+        report += `      (Belum ada nilai)\n`;
+      } else {
+        Object.entries(grades).forEach(([subject, score]) => {
+          report += `      - ${subject}: ${score}\n`;
+        });
+      }
+
+      report += `    Rata-rata: ${student.getAverage()}\n`;
+      report += `    Status: ${student.getGradeStatus()}\n`;
+      report += '-'.repeat(50) + '\n';
+    });
+
+    fs.writeFileSync(filePath, report, 'utf-8');
+    console.log(chalk.green(`✓ Laporan berhasil diekspor ke: ${filePath}`));
+  } catch (error) {
+    console.log(chalk.red(`✗ Gagal mengekspor laporan: ${error.message}`));
+  }
 }
 
 /**
@@ -296,14 +502,18 @@ function viewTopStudents() {
  * - Ulangi sampai user pilih keluar
  */
 function main() {
-  console.log('Selamat datang di Sistem Manajemen Nilai Siswa!');
+  console.log(chalk.bold.cyan('\n╔════════════════════════════════════════╗'));
+  console.log(chalk.bold.cyan('║  SISTEM MANAJEMEN NILAI SISWA         ║'));
+  console.log(chalk.bold.cyan('╚════════════════════════════════════════╝'));
+  console.log(chalk.green('Selamat datang di Sistem Manajemen Nilai Siswa!'));
 
-  // TODO: Implementasikan loop utama program
   let running = true;
 
   while (running) {
     displayMenu();
-    const choice = readlineSync.question('Pilih menu (1-8): ').trim();
+    const choice = readlineSync
+      .question(chalk.blue('Pilih menu (1-11): '))
+      .trim();
 
     switch (choice) {
       case '1':
@@ -328,14 +538,25 @@ function main() {
         viewTopStudents();
         break;
       case '8':
+        filterStudentsByClass();
+        break;
+      case '9':
+        viewClassStatistics();
+        break;
+      case '10':
+        exportReport();
+        break;
+      case '11':
         running = false;
         break;
       default:
-        console.log('Pilihan tidak valid. Silakan pilih menu 1-8.');
+        console.log(
+          chalk.red('✗ Pilihan tidak valid. Silakan pilih menu 1-11.')
+        );
     }
   }
 
-  console.log('\nTerima kasih telah menggunakan aplikasi ini!');
+  console.log(chalk.green('\nTerima kasih telah menggunakan aplikasi ini!'));
 }
 
 // Jalankan aplikasi
