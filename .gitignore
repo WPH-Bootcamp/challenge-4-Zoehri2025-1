@@ -21,6 +21,9 @@ pids
 data/*.json
 !data/.gitkeep
 
+# Generated reports
+reports/
+
 # IDE
 .vscode/
 .idea/

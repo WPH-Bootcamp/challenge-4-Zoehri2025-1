@@ -12,6 +12,8 @@
  * Kriteria Lulus: rata-rata >= 75
  */
 
+import chalk from 'chalk';
+
 class Student {
   #id;
   #name;
@@ -137,20 +139,26 @@ class Student {
    * Menampilkan informasi lengkap siswa
    */
   displayInfo() {
-    console.log(`ID: ${this.#id}`);
-    console.log(`Nama: ${this.#name}`);
-    console.log(`Kelas: ${this.#class}`);
-    console.log('Mata Pelajaran:');
+    const avg = this.getAverage();
+    const status = this.getGradeStatus();
+    const statusColor = status === 'Lulus' ? chalk.green : chalk.red;
+    
+    console.log(chalk.bold.white(`ID: ${chalk.cyan(this.#id)}`));
+    console.log(chalk.bold.white(`Nama: ${chalk.yellow(this.#name)}`));
+    console.log(chalk.bold.white(`Kelas: ${chalk.magenta(this.#class)}`));
+    console.log(chalk.bold.white('Mata Pelajaran:'));
     if (Object.keys(this.#grades).length === 0) {
-      console.log('  (Belum ada nilai)');
+      console.log(chalk.gray('  (Belum ada nilai)'));
     } else {
       Object.entries(this.#grades).forEach(([subject, score]) => {
-        console.log(`  - ${subject}: ${score}`);
+        const scoreColor = score >= 75 ? chalk.green : score >= 60 ? chalk.yellow : chalk.red;
+        console.log(chalk.white(`  - ${subject}: ${scoreColor(score)}`));
       });
     }
-    console.log(`Rata-rata: ${this.getAverage()}`);
-    console.log(`Status: ${this.getGradeStatus()}`);
-    console.log('------------------------');
+    const avgColor = avg >= 75 ? chalk.green : avg >= 60 ? chalk.yellow : chalk.red;
+    console.log(chalk.bold.white(`Rata-rata: ${avgColor(avg.toFixed(2))}`));
+    console.log(chalk.bold.white(`Status: ${statusColor(status)}`));
+    console.log(chalk.gray('------------------------'));
   }
 
   /**

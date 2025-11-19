@@ -16,6 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import chalk from 'chalk';
 import Student from './Student.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -122,11 +123,11 @@ class StudentManager {
    */
   displayAllStudents() {
     if (this.#students.length === 0) {
-      console.log('Belum ada data siswa.');
+      console.log(chalk.yellow('Belum ada data siswa.'));
       return;
     }
 
-    console.log('=== DAFTAR SISWA ===');
+    console.log(chalk.bold.cyan('=== DAFTAR SISWA ==='));
     this.#students.forEach((student) => {
       student.displayInfo();
     });
